@@ -1,44 +1,27 @@
-import { useEffect, useRef } from "react";
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-  try {
-      var info = gen[key](arg);
-      var value = info.value
-  } catch (error) {
-      reject(error);
-      return
-  }
-  if (info.done) {
-      resolve(value)
-  } else {
-      Promise.resolve(value).then(_next, _throw)
-  }
-}
-
-function _asyncToGenerator(fn) {
-  return function() {
-      var self = this
-        , args = arguments;
-      return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self, args);
-          function _next(value) {
-              asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value)
-          }
-          function _throw(err) {
-              asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err)
-          }
-          _next(undefined)
-      }
-      )
-  }
-}
+import { useEffect, useMemo, useRef, useState } from "react";
 
 var filename = "https://info.vistaequitypartners.com/rs/839-JEW-563/images/Vista%20Equity%20Partners%20Investor%20Update%20%28Restricted%20Access%29.pdf"
 
 export default function PdfViewerComponent(props) {
   const containerRef = useRef(null);
+  const [permissions, setPermissions] = useState({
+    print: false,
+    download: false,
+    rightClick: false,
+  });
 
-  const downloadButton = {
+  const unavaibleToolbarItems = useMemo(() => {
+    const toolbarItems = ["ink", "ink-signature", "stamp", "arrow", "image", "note", "text", "ellipse", "polygon", "ink-eraser", "highlighter", "text-highlighter", "polyline", "rectangle", "line", "annotate", "search"]
+    if (!permissions.print) {
+      toolbarItems.push("print");
+    }
+    if (!permissions.download) {
+      toolbarItems.push("export-pdf");
+    }
+    return toolbarItems;
+  }, [permissions]);
+
+  const customDownloadButton = {
     type: "custom",
     id: "download-pdf",
     icon: "/download.svg",
@@ -71,16 +54,23 @@ export default function PdfViewerComponent(props) {
 
     (async function () {
       PSPDFKit = await import("pspdfkit");
+      // const customToolbarItems = PSPDFKit.defaultToolbarItems.filter((item) => {
+      //   return !["ink", "ink-signature", "stamp", "arrow", "image", "note", "text", "ellipse", "polygon", "ink-eraser", "highlighter", "text-highlighter", "polyline", "rectangle", "line", "print", "annotate", "search"].includes(item.type)
+      // });
+
       const customToolbarItems = PSPDFKit.defaultToolbarItems.filter((item) => {
-        return !["ink", "ink-signature", "stamp", "arrow", "image", "note", "text", "ellipse", "polygon", "ink-eraser", "highlighter", "text-highlighter", "polyline", "rectangle", "line", "print", "annotate", "search"].includes(item.type)
+        return !unavaibleToolbarItems.includes(item.type)
       });
+
       const pdfInstance = await PSPDFKit.load({
         // Container where PSPDFKit should be mounted.
         container,
         // The document to open.
         document: props.document,
+        // document: filename,
         // Use the public directory URL as a base URL. PSPDFKit will download its library assets from here.
         baseUrl: `${window.location.protocol}//${window.location.host}/${process.env.PUBLIC_URL}`,
+        // licenseKey: "Rze0u7avAFNDdbCw4TcRNg8pestQUkSmFhIymTAVQgyrR5uLXvQVmPG3beFQOFfmQV7GEZ5f4lqVWd8eUPAp8oyr-ozd335gAg90sEHo_cYs1TXShYtzYJ1Bkj7I1G__RpsOvX7IUoUuJerxMosVAyi5s0CyRMqKKpMBk0jwQint6iGvxeervqLO5KHpihL-jWP12FlEfCtyObGJGYjDIH51gLX1vEiflFsG-hHr1ZlPXLPXj3loZbGSPGEZKaU1_fVm37IrUKwEMIer1CsG2F8Ki8IQwr9Dd8x5TJ14JpZdxKoQqtvWNr0yr1xuZ7vT928j9_XtNO_eRwbQdAppbJxA20lbqfS6NgwDZlOL1ajfhYGpuQLL2HISewNOM2uKB5emZ4M40wNLJz0ZLYxTBv5Kj6syYX_A-ndu2VL6MzlsL9SdFoB6SlxxpDv7eleYJJuiB2x-70bS68w_wCQd9EIzQ2O0nhrZSmCPpEDyf2hor6bUxPuWBwdCUEdDP_d9VZeJQMsh0VxCLbW-YgUX1vIIofA9M2XYj27VfwfpbJFk3hqzhfTzqpt8lhm37KOzI5W1k2OU-MFhsHXFZtwR8Z9Ef6n3REvL2wmMMmxe8iQ=",
 
         // Custom configuration from snippet
         toolbarItems: customToolbarItems,
@@ -98,6 +88,8 @@ export default function PdfViewerComponent(props) {
           return true;
         }
       });
+
+      pdfInstance.contentDocument.addEventListener('contextmenu', event => event.preventDefault())
 
       for (var pageIndex = 0; pageIndex < pdfInstance.totalPageCount; ++pageIndex) {
         var pageInfo = pdfInstance.pageInfoForIndex(pageIndex);
