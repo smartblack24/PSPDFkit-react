@@ -5,13 +5,13 @@ var filename = "https://info.vistaequitypartners.com/rs/839-JEW-563/images/Vista
 export default function PdfViewerComponent(props) {
   const containerRef = useRef(null);
   const [permissions, setPermissions] = useState({
-    print: false,
-    download: false,
+    print: true,
+    download: true,
     rightClick: false,
   });
 
   const unavaibleToolbarItems = useMemo(() => {
-    const toolbarItems = ["ink", "ink-signature", "stamp", "arrow", "image", "note", "text", "ellipse", "polygon", "ink-eraser", "highlighter", "text-highlighter", "polyline", "rectangle", "line", "annotate", "search"]
+    const toolbarItems = ["ink", "ink-signature", "stamp", "arrow", "image", "note", "text", "ellipse", "polygon", "ink-eraser", "highlighter", "text-highlighter", "polyline", "rectangle", "line", "annotate", "search", "cloud", "link"]
     if (!permissions.print) {
       toolbarItems.push("print");
     }
@@ -91,6 +91,7 @@ export default function PdfViewerComponent(props) {
 
       pdfInstance.contentDocument.addEventListener('contextmenu', event => event.preventDefault())
 
+      // Create Watermark
       for (var pageIndex = 0; pageIndex < pdfInstance.totalPageCount; ++pageIndex) {
         var pageInfo = pdfInstance.pageInfoForIndex(pageIndex);
         var fontSize = 30;
@@ -115,25 +116,19 @@ export default function PdfViewerComponent(props) {
         pdfInstance.create(watermark);
       }
 
-      // await PSPDFKit.load({
-      //   pdf: filename,
-      //   document: filename,
-      //   // toolbarItems: PSPDFKit.defaultToolbarItems.concat([downloadButton]),
-      //   // printMode: PSPDFKit.PrintMode.DOM,
-      //   container,
-      //   // licenseKey: "eypWp9sYszK3fW5vdmyLqF7ah2kLUGAfalO4D9Dl2J71B0z-XtQrz9BSCichkbHne7UQ38WJRoWrxte153nI7bxYxBWj3vkviaOgiEnE6UwbDhyKg_UBM7FXp_Nh6vQrE4NcZvYEIDKpNo4v4ycbZMOXQFSeDLmAsh6DH6W-MSNboFueVdGshr_4i28d64XQyAyLBZt3HfUKA1aAaSate8QkPaSgXz3Igr543YS-JGCmh2psdfO-US6_ViwrRXGEHhWkr5pd_sFicP94DkkPD1J5dFIlNvKfH2wJvU8hzZ5vzyrHZmDM43blWXE-LKYIW1J9aJ6tmOAI39YzB4_eZRuUru_vEs8NglcF5700aa-Zy6qGPXFpGw9f3ntuM9MBot49ODjc47pUfHY3THxl3VEJWVJNa5OnI30BnwhXCjNfZlG2rpoP-T87Lijgcb6i-ot3MnOHixWllXDPgC8dOoWWKn4z991GUk9555wma0u_yKzY2WtlGCreMvrEN3KgwSVJ6pJSDS4Ax0ye_WxkdCSW4IBlxLNEmdQtLYRoZ-1Srac16r9EptCxvjo5hQy-WB8bBiUKCJSacRa-UM9HK_Yf1NB3ut_3PWoYUnd976E=",
-      //   // initialViewState: new PSPDFKit.ViewState({
-      //   //   zoom: PSPDFKit.ZoomMode.FIT_TO_WIDTH,
-      //   //   readOnly: true
-      //   // }),
-      //   // isEditableAnnotation: function isEditableAnnotation(annotation) {
-      //   //   if (annotation.customData) {
-      //   //     return !annotation.customData.watermark;
-      //   //   }
-      
-      //   //   return true;
-      //   // }
-      // })
+      /**
+       * Add Event Listener
+       * Time Viewed per Session
+       * Scroll Depth per Session
+       * Times Printed
+       * Time Downloaded
+       * Words Highlighted
+       * Words Copied from Document
+       * Document Rendering Status per Session
+       */
+      pdfInstance.addEventListener("viewState.change", (viewState) => {
+        console.log(viewState.toJS());
+      });
     })();
 
     return () => PSPDFKit && PSPDFKit.unload(container);
